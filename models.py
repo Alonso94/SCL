@@ -3,10 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torchvision import models
 
-import time
-
 device=torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
-print("GPU is working:",torch.cuda.is_available())
 
 class SCL_model(nn.Module):
     def __init__(self,descriptor_dims ,width ,height):
