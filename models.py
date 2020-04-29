@@ -6,7 +6,7 @@ from torchvision import models
 device=torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 
 class SCL_model(nn.Module):
-    def __init__(self,descriptor_dims ,width ,height):
+    def __init__(self,spatial_features_size,width ,height):
         super().__init__()
         # comment lines 106-117 from ./local/lib/python3.6/site-packages/torchvision/models/inception.py
         # to make it load faster
@@ -26,12 +26,12 @@ class SCL_model(nn.Module):
             param.requires_grad=False
         self.conv6_1 = nn.Conv2d(288, 100, kernel_size=3, stride=1)
         self.batch_norm_1 = nn.BatchNorm2d(100, eps=1e-3)
-        self.conv6_2 = nn.Conv2d(100, 20, kernel_size=3, stride=1)
-        self.batch_norm_2 = nn.BatchNorm2d(20, eps=1e-3)
+        self.conv6_2 = nn.Conv2d(100, spatial_features_size, kernel_size=3, stride=1)
+        self.batch_norm_2 = nn.BatchNorm2d(spatial_features_size, eps=1e-3)
         # softmax2d is an activation in each channel
         # spatial softmax s_{ij}=\frac{exp(a_{ij})}{\sum_{i',j'} exp(a_{i'j'})}
         self.spatial_softmax = nn.Softmax2d()
-        self.fc7 = nn.Linear(20 * (width/8-7) * (height/8-7) , 32)
+        self.fc7 = nn.Linear(spatial_features_size * int(width/8-7) * int(height/8-7) , 32)
         self.alpha = 10.0
 
     def normalize(self, x):
@@ -79,15 +79,19 @@ class SCL_model(nn.Module):
 class Descriptor_net(nn.Module):
     def __init__(self, spatial_features_size, width,height):
         super().__init__()
-        self.conv_trans1=nn.ConvTranspose2d(spatial_features_size,6,kernel_size=3,stride=1)
-        self.conv_trans1 = nn.ConvTranspose2d(6, 3, kernel_size=3, stride=1)
+        self.conv_trans1=nn.ConvTranspose2d(spatial_features_size,6,kernel_size=5,stride=2)
+        self.conv_trans2 = nn.ConvTranspose2d(6, 3, kernel_size=5, stride=2)
         self.width=width
         self.height=height
 
     def forward(self,x):
+        # 20 x 25 x 25
         x=self.conv_trans1(x)
         x=F.relu(x)
+        # 3 x 53 x 53
         x=self.conv_trans2(x)
         x=F.relu(x)
+        # 3 x 109 x 109
         x=F.interpolate(x,size=(self.width,self.height),mode='bilinear',align_corners=True)
+        # 3 x 256 x 256
         return x

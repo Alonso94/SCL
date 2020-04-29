@@ -3,8 +3,10 @@ import numpy as np
 import cv2
 
 import torch
+from torch import nn
 from torch.utils.data import Dataset
 from torchvision import transforms
+import kornia
 
 device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 
@@ -22,25 +24,27 @@ class SCL_dataset(Dataset):
     def __init__(self, width, height):
         self.margin = 5
 
-        self.pos_margin = 3
-        self.neg_margin_near = 5
-        self.neg_margin_far = 10
-
         self.ref_length = 100
+
+        self.margins_step=0
+        self.pos_margin = [3,4,5,6]
+        self.neg_margin_near = [4,6,8,10]
+        self.neg_margin_far = [10,self.ref_length//4,self.ref_length//2,self.ref_length]
+
         # we will resize frames to this width and height
         self.width = width
         self.height = height
         self.num_channels = 3
 
         # read video_multiview directory
-        self.path = "/home/ali/Cost-learning/videos"
+        self.path = "videos"
         filenames = [p for p in os.listdir(self.path) if p[0] != '.']
         filenames = np.sort(filenames)
         self.video_paths = [os.path.join(self.path, f) for f in filenames]
         self.video_count = len(self.video_paths)
         # logging
         print("The number fo the videos:", self.video_count)
-        print(" video paths:")
+        print(" videos paths:")
         for i in range(self.video_count):
             print("%d. %s" % (i, self.video_paths[i]))
 
@@ -53,24 +57,32 @@ class SCL_dataset(Dataset):
         self.transform = transforms.Compose([
             transforms.ToTensor(),
             transforms.Normalize(mean, std)
-            # transforms.ColorJitter(0.0,0.0,0.0,0.0)
         ])
+        self.augmentation= nn.Sequential(
+            kornia.augmentation.RandomRotation(30.0),
+            kornia.augmentation.ColorJitter(0.3,0.3,0.3,0.3)
+        )
         self.unormalize = UnNormalize(mean, std)
 
     def __len__(self):
-        return len(self.frames)
+        return self.ref_length
 
-    def update_margins(self,pos_factor, neg_near_factor, neg_far_factor):
-        self.pos_margin*=pos_factor
-        self.neg_margin_near*=neg_near_factor
-        self.neg_margin_far*=neg_far_factor
+    def update_margins(self):
+        self.margins_step=min(self.margins_step+1,len(self.pos_margin)-1)
+
+    def transform_frame(self,x):
+        x=self.transform(x)
+        x=self.augmentation(x).squeeze()
+        return x
+
 
     def __getitem__(self, idx):
+        self.video_index=np.random.randint(0,2)
         pos_index = self.sample_positive(idx)
         neg_index = self.sample_negative(idx)
-        anchor = self.transform(self.frames[idx])
-        pos = self.transform(self.frames[pos_index])
-        neg = self.transform(self.frames[neg_index])
+        anchor = self.transform_frame(self.frames[self.video_index,idx])
+        pos = self.transform_frame(self.frames[self.video_index,pos_index])
+        neg = self.transform_frame(self.frames[self.video_index,neg_index])
         sample = torch.stack([anchor, pos, neg])
         return sample
 
@@ -90,29 +102,30 @@ class SCL_dataset(Dataset):
             cap = cv2.VideoCapture(videp_path)
             length = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
             factor = self.ref_length / length
-            frames = np.empty((length, self.height, self.width, self.num_channels), dtype=np.uint8)
+            video_frames = np.empty((self.ref_length, self.height, self.width, self.num_channels), dtype=np.uint8)
             for i in range(length):
                 ret, frame = cap.read()
                 if ret:
                     frame = cv2.resize(frame, (self.width, self.height))
+                    frame=cv2.rotate(frame,cv2.ROTATE_90_CLOCKWISE)
                     index = int(i * factor)
-                    frames[index, ...] = frame
+                    video_frames[index, ...] = frame
             cap.release()
-            frames.append(frames)
-        frames1 = np.array(frames)#.squeeze(0)
-        return frames1
+            frames.append(video_frames)
+        frames = np.stack(frames)#.squeeze(0)
+        return frames
 
     def sample_positive(self, anchor):
-        min_ = max(0, anchor - self.pos_margin)
-        max_ = min(self.ref_length - 1, anchor + self.pos_margin)
+        min_ = max(0, anchor - self.pos_margin[self.margins_step])
+        max_ = min(self.ref_length - 1, anchor + self.pos_margin[self.margins_step])
         return np.random.choice(np.arange(min_, max_))
 
     def sample_negative(self, anchor):
-        start1 = max(0, anchor - self.neg_margin_far)
-        end1 = max(0, anchor - self.neg_margin_near)
+        start1 = max(0, anchor - self.neg_margin_far[self.margins_step])
+        end1 = max(0, anchor - self.neg_margin_near[self.margins_step])
         range1 = np.arange(start1, end1)
-        start2 = min(self.ref_length-1, anchor + self.neg_margin_near)
-        end2= min(self.ref_length-1, anchor + self.neg_margin_far)
+        start2 = min(self.ref_length-1, anchor + self.neg_margin_near[self.margins_step])
+        end2= min(self.ref_length-1, anchor + self.neg_margin_far[self.margins_step])
         range2 = np.arange(start2, end2)
         range = np.concatenate([range1, range2])
         return np.random.choice(range)

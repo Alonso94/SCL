@@ -13,16 +13,21 @@ device=torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu'
 class TripletLoss(nn.Module):
     def __init__(self):
         super(TripletLoss, self).__init__()
+        self.margin_step=0
+        self.margins=[4,6,8,10]
+
+    def update_margin(self):
+        self.margin_step = min(self.margin_step + 1, len(self.margins) - 1)
 
     def distance(self, x, y):
         diff = torch.abs(x - y)
         diff=torch.pow(diff, 2).sum(-1)
         return diff
 
-    def forward(self,anchor,pos,neg, margin):
+    def forward(self,anchor,pos,neg):
         pos_distance=self.distance(anchor,pos)
         neg_distance=self.distance(anchor,neg)
-        loss = torch.clamp( margin + pos_distance - neg_distance,min=0.0).mean()
+        loss = torch.clamp( self.margins[self.margin_step] + pos_distance - neg_distance,min=0.0).mean()
         return loss
 
 class PixelwiseLoss(nn.Module):
@@ -39,7 +44,10 @@ class PixelwiseLoss(nn.Module):
     def edge_detection(self,img):
         img=img.cpu().numpy()*255
         img=img.astype(np.uint8)
-        edges=cv2.Canny(img,100,200)
+        edges=cv2.Canny(img,100,220)
+        # cv2.imshow("img", img)
+        # cv2.imshow("edges", edges)
+        # cv2.waitKey(0)
         indices=np.where(edges!=[0])
         coordinates=list(zip(indices[1],indices[0]))
         # print(len(coordinates))
@@ -131,8 +139,8 @@ class PixelwiseLoss(nn.Module):
         return loss
 
     def forward(self,img1,img1_out,img2,img2_out):
-        # img1 and img3 (anchor and neg1) from the same video
-        # img2 and img4 (pos and neg2) from the same video
+        # img1 and img3 (anchor and neg1) from the same videos
+        # img2 and img4 (pos and neg2) from the same videos
         # img1 and img2 at the same time
         # img3 and img4 at the same time
         # extract features (edges)
@@ -142,7 +150,7 @@ class PixelwiseLoss(nn.Module):
         loss_matches=self.loss_matches(img1_out,img2_out,features_anchor,features_pos)
         # non_matches loss - non matches from images taken at the same time
         loss_non_matches=self.loss_non_matches(img1_out,img2_out,features_anchor,features_pos)
-        # difference loss - difference between images from the same video
-        loss_difference=self.loss_diff(img1_out, img2_out,img1,img2)
-        loss= loss_matches +  loss_non_matches + loss_difference
+        # difference loss - difference between images from the same videos
+        # loss_difference=self.loss_diff(img1_out, img2_out,img1,img2)
+        loss= loss_matches +  loss_non_matches #+ loss_difference
         return loss
