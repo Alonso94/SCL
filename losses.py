@@ -14,10 +14,12 @@ class TripletLoss(nn.Module):
     def __init__(self):
         super(TripletLoss, self).__init__()
         self.margin_step=0
-        self.margins=[4,6,8,10]
+        self.count=0
+        self.margins=[0.3,0.5,1.0,2.0]
 
     def update_margin(self):
-        self.margin_step = min(self.margin_step + 1, len(self.margins) - 1)
+        self.count+=1
+        self.margin_step = self.count % len(self.margins)
 
     def distance(self, x, y):
         diff = torch.abs(x - y)
@@ -29,6 +31,75 @@ class TripletLoss(nn.Module):
         neg_distance=self.distance(anchor,neg)
         loss = torch.clamp( self.margins[self.margin_step] + pos_distance - neg_distance,min=0.0).mean()
         return loss
+
+class PixelTripletLoss(nn.Module):
+    def __init__(self,width, height):
+        super().__init__()
+        self.margin_step = 0
+        self.count = 0
+        self.margins = [5, 10, 15, 20]
+        self.num_pos_points = 500
+        self.num_neg_points = 500
+
+        self.width = width
+        self.height = height
+        self.num_channels = 3
+
+    def update_margins(self):
+        self.count += 1
+        self.margin_step = self.count % len(self.margins)
+
+    def edge_detection(self,img):
+        img=img.cpu().numpy()*255
+        img=img.astype(np.uint8)
+        edges=cv2.Canny(img,100,220)
+        indices=np.where(edges!=[0])
+        coordinates=list(zip(indices[1],indices[0]))
+        if len(coordinates)<self.num_pos_points:
+            a=[range(0,255)]*2
+            possible_points=list(itertools.product(*a))
+            coordinates+=random.sample(possible_points,self.num_pos_points-len(coordinates))
+        else:
+            coordinates=random.sample(coordinates,self.num_pos_points)
+        return torch.from_numpy(np.array(coordinates)).to(device)
+
+    def distance(self, x, y):
+        diff = torch.abs(x - y)
+        diff = torch.pow(diff, 2).sum(-1)
+        epsilon=1e-7
+        return (diff+epsilon).sqrt()
+
+    def features_in_out(self,img,features):
+        xs=features[:,0]
+        ys=features[:,1]
+        return img[:,:,xs,ys]
+
+    def loss_matches(self,img1_out,img2_out,features_in_out1,features_in_out2):
+        loss=self.distance(features_in_out1,features_in_out2).mean()
+        return loss
+
+    def loss_non_matches(self,img1_out,img2_out,features_in_out1):
+        non_mathces_x=torch.randint(0,self.width,(1,self.num_neg_points)).long()
+        non_mathces_y = torch.randint(0, self.height, (1, self.num_neg_points)).long()
+        non_matches=torch.stack([non_mathces_x,non_mathces_y],dim=1)
+        features_in_out2=self.features_in_out(img2_out,non_matches)
+        loss=self.distance(features_in_out1,features_in_out2)
+        return loss
+
+    def forward(self,img1,img1_out,img2,img2_out):
+        # extract features (indices)
+        features_img1=self.edge_detection(img1)
+        features_img2=self.edge_detection(img2)
+        # features from the out image
+        features_in_out1 = self.features_in_out(img1_out, features_img1)
+        features_in_out2 = self.features_in_out(img2_out, features_img2)
+        # matches loss
+        pos_distance=self.loss_matches(img1_out,img2_out,features_in_out1,features_in_out2)
+        # non_matches loss
+        neg_distance=self.loss_non_matches(img1_out,img2_out,features_in_out1)
+        loss = torch.clamp(self.margins[self.margin_step] + pos_distance - neg_distance, min=0.0).mean()
+        return loss
+
 
 class PixelwiseLoss(nn.Module):
     def __init__(self,width, height):
@@ -151,6 +222,6 @@ class PixelwiseLoss(nn.Module):
         # non_matches loss - non matches from images taken at the same time
         loss_non_matches=self.loss_non_matches(img1_out,img2_out,features_anchor,features_pos)
         # difference loss - difference between images from the same videos
-        # loss_difference=self.loss_diff(img1_out, img2_out,img1,img2)
+        loss_difference=self.loss_diff(img1_out, img2_out,img1,img2)
         loss= loss_matches +  loss_non_matches #+ loss_difference
         return loss

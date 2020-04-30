@@ -22,13 +22,13 @@ class UnNormalize(object):
 
 class SCL_dataset(Dataset):
     def __init__(self, width, height):
-        self.margin = 5
 
         self.ref_length = 100
 
         self.margins_step=0
-        self.pos_margin = [3,4,5,6]
-        self.neg_margin_near = [4,6,8,10]
+        self.count=0
+        self.pos_margin = [2,6,10,15]
+        self.neg_margin_near = [4,10,15,25]
         self.neg_margin_far = [10,self.ref_length//4,self.ref_length//2,self.ref_length]
 
         # we will resize frames to this width and height
@@ -68,7 +68,8 @@ class SCL_dataset(Dataset):
         return self.ref_length
 
     def update_margins(self):
-        self.margins_step=min(self.margins_step+1,len(self.pos_margin)-1)
+        self.count+=1
+        self.margins_step= self.count % len(self.pos_margin)
 
     def transform_frame(self,x):
         x=self.transform(x)
