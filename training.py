@@ -15,7 +15,7 @@ print("GPU is working:",torch.cuda.is_available())
 
 class SCL_trainer:
     def __init__(self,load=True, width=256, height=256):
-        self.writer=SummaryWriter('runs/SCL_3')
+        self.writer=SummaryWriter('runs/SCL_1')
         self.spatial_features_size=20
         self.load=load
         self.dataset = SCL_dataset(width,height)
@@ -43,18 +43,18 @@ class SCL_trainer:
         self.optimizer=optim.Adam(self.model.parameters(),lr=1e-4,weight_decay=1e-4)
         self.descriptor_optimizer=optim.Adam(self.descriptor_model.parameters(),lr=1e-4,weight_decay=1e-4)
         self.max_iter=3500
-        self.dataloader = torch.utils.data.DataLoader(self.dataset, 32, shuffle=True, pin_memory=device)
+        self.dataloader = torch.utils.data.DataLoader(self.dataset, 1, shuffle=True, pin_memory=device)
         self.descriptor_dataloader = torch.utils.data.DataLoader(self.dataset, 1, shuffle=True, pin_memory=device)
         self.images = self.dataset.frames[0]
         self.embedding=torch.empty((len(self.images),32))
+        self.cost_counter=0
 
-    def run_training(self,iterations=450):
+    def run_training(self,iterations=500):
         self.dataset.count=0
         i=0
         for epoch in tqdm(range(iterations)):
             for data in self.dataloader:
                 step=i
-                i+=1
                 # inputs
                 data=data.permute(1,0,2,3,4).to(device)
                 anchor,pos,neg=data
@@ -68,11 +68,24 @@ class SCL_trainer:
                 loss.backward()
                 self.optimizer.step()
                 # plot loss
-                self.writer.add_scalar("training_loss", loss.item(), step)
+                normalized_loss=loss.item()/self.contrastive_criterion.margins[self.contrastive_criterion.margin_step]
+                self.writer.add_scalar("training_loss", normalized_loss, step)
                 # update margin - step the scheduler
-                if i%100==0:
+                if i%5000==0:
                     self.dataset.update_margins()
                     self.contrastive_criterion.update_margin()
+                if i % 5000 == 0 or i == 0:
+                    for j in range(len(self.images)):
+                        img = self.dataset.transform(self.images[j]).unsqueeze(0).to(device)
+                        with torch.no_grad():
+                            self.embedding[j], _ = self.model(img)
+                    for j in range(len(self.images)):
+                        dis=torch.abs(self.embedding[-1]-self.embedding[j]).pow(2).sum(-1)
+                        cost=-dis
+                        self.writer.add_scalar("cost_%d" %self.cost_counter, cost, j)
+                    self.writer.add_embedding(self.embedding, global_step=step)
+                    self.cost_counter += 1
+                i += 1
             # soft update
             if self.load:
                 for param1, param2 in zip(self.model.parameters(), self.delayed_model.parameters()):
@@ -80,13 +93,8 @@ class SCL_trainer:
                     param1.data.copy_(param2)
             # save the model and visualize the embeddings
             torch.save(self.model.state_dict(), self.save_to)
-            for j in range(len(self.images)):
-                img=self.dataset.transform(self.images[j]).unsqueeze(0).to(device)
-                with torch.no_grad():
-                    self.embedding[j],_=self.model(img)
-            self.writer.add_embedding(self.embedding,global_step=step)
 
-    def train_descriptors(self,iterations=300):
+    def train_descriptors(self,iterations=400):
         self.dataset.count = 0
         i = 0
         for epoch in tqdm(range(iterations)):
@@ -106,7 +114,7 @@ class SCL_trainer:
                 img1_un=vis1.permute(1,2,0)
                 img2_out = self.descriptor_model(spatial_features2)
                 img2_un = self.dataset.unormalize(img2.squeeze()).permute(1,2,0)
-                if i%500==0:
+                if i%5000==0:
                     self.writer.add_image("original vs. prediction", torchvision.utils.make_grid([vis1,vis2]),step)
                     self.dataset.update_margins()
                     self.pixel_criterion.update_margins()
@@ -117,7 +125,8 @@ class SCL_trainer:
                 loss_p.backward()
                 self.descriptor_optimizer.step()
                 # plot loss
-                self.writer.add_scalar("training_descriptor_loss",loss_p.item(),step)
+                normalized_loss=loss_p.item()/self.pixel_criterion.margins[self.pixel_criterion.margin_step]
+                self.writer.add_scalar("training_descriptor_loss",normalized_loss,step)
                 torch.save(self.descriptor_model.state_dict(), self.d_save_to)
                 # soft update
             if self.load:

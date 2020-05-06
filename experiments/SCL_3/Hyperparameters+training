@@ -1,0 +1,20 @@
+Training time contrastive:
+100%|██████████| 500/500 [1:34:50<00:00, 11.38s/it]
+(50000 iteration)
+Training pixel-wise:
+100%|██████████| 400/400 [1:18:02<00:00, 11.71s/it]
+(40000 iteration)
+
+alpha time contrastive:
+margins=[0.01,0.03,0.07,0.1]
+alpha pixel wise:
+margins = [1.0, 2.0, 3.0, 5.0]
+
+Update time contrastive:
+i%3000
+batchsize = 1
+(3000 image)
+Update pixel wise:
+i%3000==0
+batchsize = 1
+(3000 image)
