@@ -15,11 +15,13 @@ class TripletLoss(nn.Module):
         super(TripletLoss, self).__init__()
         self.margin_step=0
         self.count=0
-        self.margins=[3,4,5,6]
+        self.margins=[40,20,10,8,4]
 
     def update_margin(self):
         self.count+=1
-        self.margin_step = self.count % len(self.margins)
+        # self.margin_step = self.count % len(self.margins)
+        self.margin_step = min(self.count, len(self.margins)-1)
+
 
     def distance(self, x, y):
         diff = torch.abs(x - y)
@@ -37,7 +39,7 @@ class PixelTripletLoss(nn.Module):
         super().__init__()
         self.margin_step = 0
         self.count = 0
-        self.margins = [5, 10, 20, 30]
+        self.margins = [40,20,10,8,4]
         self.num_pos_points = 500
         self.num_neg_points = 500
 
@@ -47,7 +49,8 @@ class PixelTripletLoss(nn.Module):
 
     def update_margins(self):
         self.count += 1
-        self.margin_step = self.count % len(self.margins)
+        # self.margin_step = self.count % len(self.margins)
+        self.margin_step = min(self.count, len(self.margins) - 1)
 
     def edge_detection(self,img):
         img=img.cpu().numpy()*255

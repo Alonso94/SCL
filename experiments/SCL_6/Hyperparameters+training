@@ -1,25 +1,29 @@
 Training time contrastive:
-100%|██████████| 500/500 [1:43:38<00:00, 12.44s/it]
+100%|██████████| 500/500 [1:34:32<00:00, 11.35s/it]
 (50000 iteration)
 Training pixel-wise:
-100%|██████████| 400/400 [1:22:10<00:00, 12.33s/it]
+100%|██████████| 400/400 [1:14:21<00:00, 11.15s/it]
 (40000 iteration)
 
 alpha time contrastive:
-margins=[0.1,0.2,0.4,0.6]
+margins=[3,5,8,12]
 alpha pixel wise:
-margins = [5, 10, 15, 20]
+margins = [5, 8, 14, 23]
 
 dataset:
 pos_margin = [2,6,10,15]
 neg_margin_near = [4,10,15,25]
 neg_margin_far = [10,self.ref_length//4,self.ref_length//2,self.ref_length]
 
+in update loss:
+self.margin_step = min(self.count, len(self.margins)-1)
+Not correct, because we haven't updated dataset margins
+
 Update time contrastive:
-i%4500
+i%5000
 batchsize = 1
 (4500 image)
 Update pixel wise:
-i%3000==0
+i%1000==0
 batchsize = 1
 (3000 image)

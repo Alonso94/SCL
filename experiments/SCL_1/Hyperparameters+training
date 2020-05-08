@@ -10,6 +10,11 @@ margins=[0.3,0.5,1.0,2.0]
 alpha pixel wise:
 margins = [5, 10, 15, 20]
 
+dataset:
+pos_margin = [2,6,10,15]
+neg_margin_near = [4,10,15,25]
+neg_margin_far = [10,self.ref_length//4,self.ref_length//2,self.ref_length]
+
 Update time contrastive:
 i%150==0
 batchsize = 10

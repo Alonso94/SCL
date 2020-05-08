@@ -39,7 +39,7 @@ class SCL_trainer:
             self.d_delayed_model = Descriptor_net(self.spatial_features_size,width,height).to(device)
             self.d_delayed_model.load_state_dict(torch.load(self.d_load_from, map_location=device))
             self.d_delayed_model.eval()
-            self.tau = 0.05
+            self.tau = 0.001
         self.optimizer=optim.Adam(self.model.parameters(),lr=1e-4,weight_decay=1e-4)
         self.descriptor_optimizer=optim.Adam(self.descriptor_model.parameters(),lr=1e-4,weight_decay=1e-4)
         self.max_iter=3500
@@ -49,7 +49,7 @@ class SCL_trainer:
         self.embedding=torch.empty((len(self.images),32))
         self.cost_counter=0
 
-    def run_training(self,iterations=500):
+    def run_training(self,iterations=200):
         self.dataset.count=0
         i=0
         for epoch in tqdm(range(iterations)):
@@ -68,13 +68,13 @@ class SCL_trainer:
                 loss.backward()
                 self.optimizer.step()
                 # plot loss
-                normalized_loss=loss.item()/self.contrastive_criterion.margins[self.contrastive_criterion.margin_step]
-                self.writer.add_scalar("training_loss", normalized_loss, step)
+                # normalized_loss=loss.item()/self.contrastive_criterion.margins[self.contrastive_criterion.margin_step]
+                self.writer.add_scalar("training_loss", loss.item(), step)
                 # update margin - step the scheduler
-                if i%5000==0:
+                if (i+1)%3500==0:
                     self.dataset.update_margins()
                     self.contrastive_criterion.update_margin()
-                if i % 5000 == 0 or i == 0:
+                if (i+1)%3500==0 or i == 0:
                     for j in range(len(self.images)):
                         img = self.dataset.transform(self.images[j]).unsqueeze(0).to(device)
                         with torch.no_grad():
@@ -94,13 +94,12 @@ class SCL_trainer:
             # save the model and visualize the embeddings
             torch.save(self.model.state_dict(), self.save_to)
 
-    def train_descriptors(self,iterations=400):
+    def train_descriptors(self,iterations=200):
         self.dataset.count = 0
         i = 0
         for epoch in tqdm(range(iterations)):
             for data in self.descriptor_dataloader:
                 step = i
-                i += 1
                 # inputs
                 data = data.permute(1, 0, 2, 3, 4).to(device)
                 img1, img2, _ = data
@@ -114,8 +113,9 @@ class SCL_trainer:
                 img1_un=vis1.permute(1,2,0)
                 img2_out = self.descriptor_model(spatial_features2)
                 img2_un = self.dataset.unormalize(img2.squeeze()).permute(1,2,0)
-                if i%5000==0:
+                if (i+1)%3500==0:
                     self.writer.add_image("original vs. prediction", torchvision.utils.make_grid([vis1,vis2]),step)
+                    # if i>10000:
                     self.dataset.update_margins()
                     self.pixel_criterion.update_margins()
                 # loss computation
@@ -125,10 +125,11 @@ class SCL_trainer:
                 loss_p.backward()
                 self.descriptor_optimizer.step()
                 # plot loss
-                normalized_loss=loss_p.item()/self.pixel_criterion.margins[self.pixel_criterion.margin_step]
-                self.writer.add_scalar("training_descriptor_loss",normalized_loss,step)
+                # normalized_loss=loss_p.item()/self.pixel_criterion.margins[self.pixel_criterion.margin_step]
+                self.writer.add_scalar("training_descriptor_loss",loss_p.item(),step)
                 torch.save(self.descriptor_model.state_dict(), self.d_save_to)
-                # soft update
+                i += 1
+            # soft update
             if self.load:
                 for param1, param2 in zip(self.descriptor_model.parameters(), self.d_delayed_model.parameters()):
                     param2.data.copy_(self.tau * param1.data + (1 - self.tau) * param2.data)

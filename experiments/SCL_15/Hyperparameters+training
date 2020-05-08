@@ -1,0 +1,28 @@
+Training time contrastive:
+100%|██████████| 200/200 [38:46<00:00, 11.63s/it]
+(20000 iteration)
+Training pixel-wise:
+100%|██████████| 200/200 [42:00<00:00, 12.60s/it]
+(20000 iteration)
+
+mod: False
+Reversed margins: False
+
+alpha time contrastive:
+margins=[2,4,5,10,20]
+alpha pixel wise:
+margins = [2,4,5,10,20]
+
+dataset:
+pos_margin = [2,6,10,15,20]
+neg_margin_near = [4,10,15,25,40]
+neg_margin_far = [10,self.ref_length//6,self.ref_length//4,self.ref_length//2,self.ref_length]
+
+Update time contrastive:
+i%2500
+batchsize = 1
+(2500 image)
+Update pixel wise:
+i%2500==0
+batchsize = 1
+(2500 image)

@@ -27,9 +27,9 @@ class SCL_dataset(Dataset):
 
         self.margins_step=0
         self.count=0
-        self.pos_margin = [2,6,10,15]
-        self.neg_margin_near = [4,10,15,25]
-        self.neg_margin_far = [10,self.ref_length//4,self.ref_length//2,self.ref_length]
+        self.pos_margin = [20,15,10,6,2]
+        self.neg_margin_near = [40,25,15,10,4]
+        self.neg_margin_far = [self.ref_length,self.ref_length//2,self.ref_length//4,self.ref_length//6,10]
 
         # we will resize frames to this width and height
         self.width = width
@@ -69,7 +69,8 @@ class SCL_dataset(Dataset):
 
     def update_margins(self):
         self.count+=1
-        self.margins_step= self.count % len(self.pos_margin)
+        # self.margins_step= self.count % len(self.pos_margin)
+        self.margin_step = min(self.count, len(self.pos_margin) - 1)
 
     def transform_frame(self,x):
         x=self.transform(x)
