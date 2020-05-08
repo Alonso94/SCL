@@ -49,7 +49,7 @@ class SCL_trainer:
         self.embedding=torch.empty((len(self.images),32))
         self.cost_counter=0
 
-    def run_training(self,iterations=200):
+    def run_training(self,iterations=100):
         self.dataset.count=0
         i=0
         for epoch in tqdm(range(iterations)):
@@ -71,10 +71,10 @@ class SCL_trainer:
                 # normalized_loss=loss.item()/self.contrastive_criterion.margins[self.contrastive_criterion.margin_step]
                 self.writer.add_scalar("training_loss", loss.item(), step)
                 # update margin - step the scheduler
-                if (i+1)%3500==0:
+                if (i+1)%500==0 and i>2500:
                     self.dataset.update_margins()
                     self.contrastive_criterion.update_margin()
-                if (i+1)%3500==0 or i == 0:
+                if (i+1)%500==0 or i == 0:
                     for j in range(len(self.images)):
                         img = self.dataset.transform(self.images[j]).unsqueeze(0).to(device)
                         with torch.no_grad():
@@ -94,7 +94,7 @@ class SCL_trainer:
             # save the model and visualize the embeddings
             torch.save(self.model.state_dict(), self.save_to)
 
-    def train_descriptors(self,iterations=200):
+    def train_descriptors(self,iterations=100):
         self.dataset.count = 0
         i = 0
         for epoch in tqdm(range(iterations)):
@@ -113,11 +113,11 @@ class SCL_trainer:
                 img1_un=vis1.permute(1,2,0)
                 img2_out = self.descriptor_model(spatial_features2)
                 img2_un = self.dataset.unormalize(img2.squeeze()).permute(1,2,0)
-                if (i+1)%3500==0:
+                if (i+1)%500==0:
                     self.writer.add_image("original vs. prediction", torchvision.utils.make_grid([vis1,vis2]),step)
-                    # if i>10000:
-                    self.dataset.update_margins()
-                    self.pixel_criterion.update_margins()
+                    if i>2500:
+                        self.dataset.update_margins()
+                        self.pixel_criterion.update_margins()
                 # loss computation
                 loss_p = self.pixel_criterion(img1_un,img1_out,img2_un,img2_out)
                 # optimization

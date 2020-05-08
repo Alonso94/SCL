@@ -27,9 +27,9 @@ class SCL_dataset(Dataset):
 
         self.margins_step=0
         self.count=0
-        self.pos_margin = [20,15,10,6,2]
-        self.neg_margin_near = [40,25,15,10,4]
-        self.neg_margin_far = [self.ref_length,self.ref_length//2,self.ref_length//4,self.ref_length//6,10]
+        self.pos_margin = [self.ref_length//4,self.ref_length//5,self.ref_length//10,self.ref_length//20,2]
+        self.neg_margin_near = [self.ref_length//3,self.ref_length//4,self.ref_length//5,self.ref_length//10,self.ref_length//20]
+        self.neg_margin_far = [self.ref_length,self.ref_length//3,self.ref_length//4,self.ref_length//5,self.ref_length//10]
 
         # we will resize frames to this width and height
         self.width = width

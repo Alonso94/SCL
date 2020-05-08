@@ -15,7 +15,7 @@ class TripletLoss(nn.Module):
         super(TripletLoss, self).__init__()
         self.margin_step=0
         self.count=0
-        self.margins=[40,20,10,8,4]
+        self.margins=[10,7.5,5,2.5,1]
 
     def update_margin(self):
         self.count+=1
@@ -39,7 +39,7 @@ class PixelTripletLoss(nn.Module):
         super().__init__()
         self.margin_step = 0
         self.count = 0
-        self.margins = [40,20,10,8,4]
+        self.margins = [25,15,10,5,2]
         self.num_pos_points = 500
         self.num_neg_points = 500
 
