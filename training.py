@@ -113,9 +113,9 @@ class SCL_trainer:
                 img1_un=vis1.permute(1,2,0)
                 img2_out = self.descriptor_model(spatial_features2)
                 img2_un = self.dataset.unormalize(img2.squeeze()).permute(1,2,0)
-                if (i+1)%500==0:
+                if (i+1)%1000==0:
                     self.writer.add_image("original vs. prediction", torchvision.utils.make_grid([vis1,vis2]),step)
-                    if i>2500:
+                    if i>5000:
                         self.dataset.update_margins()
                         self.pixel_criterion.update_margins()
                 # loss computation

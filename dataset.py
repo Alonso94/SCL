@@ -36,7 +36,7 @@ class SCL_dataset(Dataset):
         self.height = height
         self.num_channels = 3
 
-        # read video_multiview directory
+        # read videos directory
         self.path = "videos"
         filenames = [p for p in os.listdir(self.path) if p[0] != '.']
         filenames = np.sort(filenames)
@@ -59,7 +59,7 @@ class SCL_dataset(Dataset):
             transforms.Normalize(mean, std)
         ])
         self.augmentation= nn.Sequential(
-            kornia.augmentation.RandomRotation(30.0),
+            kornia.augmentation.RandomRotation(90.0),
             kornia.augmentation.ColorJitter(0.3,0.3,0.3,0.3)
         )
         self.unormalize = UnNormalize(mean, std)
