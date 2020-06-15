@@ -4,5 +4,5 @@ is used widely in control and reinforcement learning to define the state and com
 
 ### Paper to appear in the proceedings of [CAICS 2020](http://caics.ru)
 
-### Architecture of the model
-!(scl_model)[]
+### A video from training dataset
+!(video)[https://github.com/Alonso94/SCL/blob/master/videos/out2.gif]
