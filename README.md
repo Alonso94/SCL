@@ -1,37 +1,8 @@
-## Welcome to GitHub Pages
+## Abstract
+The state of a physical system usually described by its po sition and movement relatively to its surroundings. This representation
+is used widely in control and reinforcement learning to define the state and compute the cost/reward value. In real-world applications, such representations are available only in structured environments. State representation learning exploits the advances of deep learning to learn useful state representation from raw sensor data. To learn a model for a robotic manipulator using video data we are interested in representation learning from RGB images. We suggest a method for which we require the user to provide us with just a couple of videos demonstrating the task. Our approach uses a sequential contrastive loss to learn latent space mapping, and task-related descriptors in each state. Our framework intended to be used in robotics control scenarios, especially with model-based reinforcement learning algorithms. The resulted representation eliminates the need for engineered reward functions or any explicit access to positioning systems, aiming to improve the applicability of learning to control physical systems. Our framework emphasis reducing the learning time, and to work with low-resource scenarios.
 
-You can use the [editor on GitHub](https://github.com/Alonso94/SCL/edit/master/README.md) to maintain and preview the content for your website in Markdown files.
+### Paper to appear in the proceedings of [CAICS 2020](http://caics.ru)
 
-Whenever you commit to this repository, GitHub Pages will run [Jekyll](https://jekyllrb.com/) to rebuild the pages in your site, from the content in your Markdown files.
-
-### Markdown
-
-Markdown is a lightweight and easy-to-use syntax for styling your writing. It includes conventions for
-
-```markdown
-Syntax highlighted code block
-
-# Header 1
-## Header 2
-### Header 3
-
-- Bulleted
-- List
-
-1. Numbered
-2. List
-
-**Bold** and _Italic_ and `Code` text
-
-[Link](url) and ![Image](src)
-```
-
-For more details see [GitHub Flavored Markdown](https://guides.github.com/features/mastering-markdown/).
-
-### Jekyll Themes
-
-Your Pages site will use the layout and styles from the Jekyll theme you have selected in your [repository settings](https://github.com/Alonso94/SCL/settings). The name of this theme is saved in the Jekyll `_config.yml` configuration file.
-
-### Support or Contact
-
-Having trouble with Pages? Check out our [documentation](https://help.github.com/categories/github-pages-basics/) or [contact support](https://github.com/contact) and we’ll help you sort it out.
+### Architecture of the model
+!(scl_model)[]
