@@ -1,4 +1,4 @@
 theme: jekyll-theme-cayman
-destination: ./scl
+markdown: GFM
 title: Sequential Contrastive Learning to Master Effective Representations For Reinforcement Learning and Control
 description: Ali Younes, and Alexandr Panov
