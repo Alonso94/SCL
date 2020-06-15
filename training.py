@@ -137,4 +137,4 @@ class SCL_trainer:
 
 scl=SCL_trainer(load=False)
 scl.run_training()
-scl.train_descriptors()
+# scl.train_descriptors()

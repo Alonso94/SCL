@@ -24,7 +24,7 @@ class UnNormalize(object):
 
 class SCL_evaluate:
     def __init__(self,width=256,height=256):
-        self.writer=SummaryWriter('evals/SCL_2')
+        self.writer=SummaryWriter('evals/SCL_1')
         self.spatial_features_size=20
         self.ref_length=50
         self.width=width
@@ -55,11 +55,17 @@ class SCL_evaluate:
         self.path = "videos"
         filenames = [p for p in os.listdir(self.path) if p[0] != '.']
         self.video_paths = [os.path.join(self.path, f) for f in filenames]
+        self.video_paths=sorted(self.video_paths)
         self.video_count = len(self.video_paths)
         print("The number of the videos: ", self.video_count)
         print("Videos in eval_videos directory: ")
         for i in range(self.video_count):
             print("%d. %s" % (i, self.video_paths[i]))
+
+        frames=self.read_video(self.video_paths[0])
+        cv2.imwrite("target.png",frames[-1])
+        self.target=self.transform(frames[-1]).unsqueeze(0).to(device)
+        self.target_embedding,_=self.model(self.target)
 
     def read_video(self,path):
         frames=np.empty((self.ref_length,self.height,self.width,3),dtype=np.uint8)
@@ -82,7 +88,7 @@ class SCL_evaluate:
         if x > self.video_count:
             raise AssertionError("Choose a number between 0 and %d" % self.video_count)
         frames = self.read_video(self.video_paths[x])
-        embeddings=torch.empty(len(frames),32)
+        embeddings=torch.empty(len(frames),32).to(device)
         # run evaluation
         for i in range(len(frames)):
             img=self.transform(frames[i]).unsqueeze(0).to(device)
@@ -93,8 +99,8 @@ class SCL_evaluate:
             vis2=self.unnormalize(vis2.squeeze())
             self.writer.add_image("descriptor prediction",torchvision.utils.make_grid([vis1,vis2]),i)
         # plot the rewards
-        for  i in range(len(embeddings)):
-            dis=torch.abs(embeddings[-1]-embeddings[i]).pow(2).sum(-1)
+        for i in range(len(embeddings)):
+            dis=torch.abs(self.target_embedding-embeddings[i]).pow(2).sum(-1)
             cost=-dis
             self.writer.add_scalar("cost", cost, i)
 
