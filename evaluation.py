@@ -52,7 +52,7 @@ class SCL_evaluate:
         self.unnormalize=UnNormalize(mean,std)
 
         # read eval_videos directory
-        self.path = "videos"
+        self.path = "eval_videos"
         filenames = [p for p in os.listdir(self.path) if p[0] != '.']
         self.video_paths = [os.path.join(self.path, f) for f in filenames]
         self.video_paths=sorted(self.video_paths)
@@ -63,7 +63,7 @@ class SCL_evaluate:
             print("%d. %s" % (i, self.video_paths[i]))
 
         frames=self.read_video(self.video_paths[0])
-        cv2.imwrite("target.png",frames[-1])
+        cv2.imwrite("images/target.png", frames[-1])
         self.target=self.transform(frames[-1]).unsqueeze(0).to(device)
         self.target_embedding,_=self.model(self.target)
 
@@ -76,14 +76,14 @@ class SCL_evaluate:
             ret,frame=cap.read()
             if ret:
                 frame=cv2.resize(frame,(self.width,self.height))
-                frame=cv2.rotate(frame,cv2.ROTATE_90_CLOCKWISE)
+                # frame=cv2.rotate(frame,cv2.ROTATE_90_CLOCKWISE)
                 index=int(i * factor)
                 frames[index,...]=frame
         cap.release()
         return frames
 
     def eval(self):
-        x = input("\n Please a video select for evaluation (by typing its number)")
+        x = input("\n Please select a video for evaluation (by typing its number)")
         x = int(x)
         if x > self.video_count:
             raise AssertionError("Choose a number between 0 and %d" % self.video_count)

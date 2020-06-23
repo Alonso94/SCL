@@ -1,7 +1,7 @@
 from models import SCL_model,Descriptor_net
 from losses import TripletLoss,PixelwiseLoss, PixelTripletLoss
 from dataset import SCL_dataset
-import cv2
+import numpy as np
 
 from tqdm import trange,tqdm
 
@@ -18,12 +18,14 @@ class SCL_trainer:
         self.writer=SummaryWriter('runs/SCL_1')
         self.spatial_features_size=20
         self.load=load
-        self.dataset = SCL_dataset(width,height)
+        self.mod=False
+        self.reverse_margins=False
+        self.dataset = SCL_dataset(width,height,self.mod,self.reverse_margins)
         self.model=SCL_model(self.spatial_features_size,width,height).to(device)
         self.descriptor_model=Descriptor_net(self.spatial_features_size,width,height).to(device)
-        self.contrastive_criterion=TripletLoss()
+        self.contrastive_criterion=TripletLoss(self.mod,self.reverse_margins)
         # self.pixel_criterion=PixelwiseLoss(width, height)
-        self.pixel_criterion=PixelTripletLoss(width,height)
+        self.pixel_criterion=PixelTripletLoss(width,height,self.mod)
         self.load_from = "models/SCL.pth"
         self.save_to = "models/SCL.pth"
         self.d_load_from = "models/d_SCL.pth"
@@ -71,10 +73,10 @@ class SCL_trainer:
                 # normalized_loss=loss.item()/self.contrastive_criterion.margins[self.contrastive_criterion.margin_step]
                 self.writer.add_scalar("training_loss", loss.item(), step)
                 # update margin - step the scheduler
-                if (i+1)%500==0 and i>2500:
+                if (i+1)%1000==0 and i>2000:
                     self.dataset.update_margins()
                     self.contrastive_criterion.update_margin()
-                if (i+1)%500==0 or i == 0:
+                if (i+1)%1000==0 or i == 0:
                     for j in range(len(self.images)):
                         img = self.dataset.transform(self.images[j]).unsqueeze(0).to(device)
                         with torch.no_grad():
@@ -94,7 +96,7 @@ class SCL_trainer:
             # save the model and visualize the embeddings
             torch.save(self.model.state_dict(), self.save_to)
 
-    def train_descriptors(self,iterations=100):
+    def train_descriptors(self,iterations=150):
         self.dataset.count = 0
         i = 0
         for epoch in tqdm(range(iterations)):
@@ -134,6 +136,15 @@ class SCL_trainer:
                 for param1, param2 in zip(self.descriptor_model.parameters(), self.d_delayed_model.parameters()):
                     param2.data.copy_(self.tau * param1.data + (1 - self.tau) * param2.data)
                     param1.data.copy_(param2)
+
+def set_global_seeds(seed):
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(seed)
+    np.random.seed(seed)
+    np.random.seed(seed)
+
+set_global_seeds(0)
 
 scl=SCL_trainer(load=False)
 scl.run_training()

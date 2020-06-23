@@ -21,15 +21,19 @@ class UnNormalize(object):
         return tensor
 
 class SCL_dataset(Dataset):
-    def __init__(self, width, height):
-
+    def __init__(self, width, height, mod,reverse_margins):
+        self.mod=mod
         self.ref_length = 100
 
         self.margins_step=0
         self.count=0
         self.pos_margin = [self.ref_length//4,self.ref_length//5,self.ref_length//10,self.ref_length//20,2]
         self.neg_margin_near = [self.ref_length//3,self.ref_length//4,self.ref_length//5,self.ref_length//10,self.ref_length//20]
-        self.neg_margin_far = [self.ref_length,self.ref_length//3,self.ref_length//4,self.ref_length//5,self.ref_length//10]
+        self.neg_margin_far = [self.ref_length,self.ref_length//2,self.ref_length//3,self.ref_length//4,self.ref_length//5]
+        if reverse_margins:
+            self.pos_margin.reverse()
+            self.neg_margin_near.reverse()
+            self.neg_margin_far.reverse()
 
         # we will resize frames to this width and height
         self.width = width
@@ -69,17 +73,18 @@ class SCL_dataset(Dataset):
 
     def update_margins(self):
         self.count+=1
-        # self.margins_step= self.count % len(self.pos_margin)
-        self.margin_step = min(self.count, len(self.pos_margin) - 1)
+        if self.mod:
+            self.margins_step= self.count % len(self.pos_margin)
+        else:
+            self.margin_step = min(self.count, len(self.pos_margin) - 1)
 
     def transform_frame(self,x):
         x=self.transform(x)
         x=self.augmentation(x).squeeze()
         return x
 
-
     def __getitem__(self, idx):
-        self.video_index=np.random.randint(0,2)
+        self.video_index=np.random.randint(0,self.video_count)
         pos_index = self.sample_positive(idx)
         neg_index = self.sample_negative(idx)
         anchor = self.transform_frame(self.frames[self.video_index,idx])
@@ -109,7 +114,7 @@ class SCL_dataset(Dataset):
                 ret, frame = cap.read()
                 if ret:
                     frame = cv2.resize(frame, (self.width, self.height))
-                    frame=cv2.rotate(frame,cv2.ROTATE_90_CLOCKWISE)
+                    # frame=cv2.rotate(frame,cv2.ROTATE_90_CLOCKWISE)
                     index = int(i * factor)
                     video_frames[index, ...] = frame
             cap.release()

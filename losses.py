@@ -11,16 +11,21 @@ device=torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu'
 # print("GPU is working:",torch.cuda.is_available())
 
 class TripletLoss(nn.Module):
-    def __init__(self):
+    def __init__(self,mod, reverse_margins):
         super(TripletLoss, self).__init__()
+        self.mod=mod
         self.margin_step=0
         self.count=0
-        self.margins=[10,7.5,5,2.5,1]
+        self.margins=[12.5,10,7.5,3.5,1]
+        if reverse_margins:
+            self.margins.reverse()
 
     def update_margin(self):
         self.count+=1
-        # self.margin_step = self.count % len(self.margins)
-        self.margin_step = min(self.count, len(self.margins)-1)
+        if self.mod:
+            self.margin_step = self.count % len(self.margins)
+        else:
+            self.margin_step = min(self.count, len(self.margins)-1)
 
 
     def distance(self, x, y):
@@ -35,8 +40,9 @@ class TripletLoss(nn.Module):
         return loss
 
 class PixelTripletLoss(nn.Module):
-    def __init__(self,width, height):
+    def __init__(self,width, height, mod):
         super().__init__()
+        self.mod=mod
         self.margin_step = 0
         self.count = 0
         self.margins = [25,15,10,5,2]
@@ -49,8 +55,10 @@ class PixelTripletLoss(nn.Module):
 
     def update_margins(self):
         self.count += 1
-        # self.margin_step = self.count % len(self.margins)
-        self.margin_step = min(self.count, len(self.margins) - 1)
+        if self.mod:
+            self.margin_step = self.count % len(self.margins)
+        else:
+            self.margin_step = min(self.count, len(self.margins) - 1)
 
     def edge_detection(self,img):
         img=img.cpu().numpy()*255
