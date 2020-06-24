@@ -1,0 +1,8 @@
+self.mod=False
+
+self.margins=[12.5,7.5,5,2.5,1]
+
+update margins:
+if (i+1)%1000==0 and i>3000:
+
+100%|██████████| 100/100 [20:54<00:00, 12.55s/it]

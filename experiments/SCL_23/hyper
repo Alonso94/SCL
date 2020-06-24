@@ -1,0 +1,12 @@
+adding manual seed
+
+self.mod=False
+self.reverese_margins=False
+
+self.margins=[5,4,3,2,1]
+
+update margins:
+if (i+1)%500==0 and i > 2500:
+
+150
+

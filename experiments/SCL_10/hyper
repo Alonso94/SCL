@@ -1,0 +1,11 @@
+adding manual seed
+
+self.mod=False
+
+self.margins=[12.5,7.5,5,2.5,1]
+
+update margins:
+if (i+1)%3000==0:
+
+200
+
