@@ -7,9 +7,13 @@ Our framework serves robotics control scenarios, especially model-based reinforc
 Project webpage : [https://alonso94.github.io/SCL/](https://alonso94.github.io/SCL/)
 ### Training videos
 <p align="center">
-  <img src="https://raw.githubusercontent.com/Alonso94/SCL/master/videos/out2.gif" width=25%>
+  <img src="https://raw.githubusercontent.com/Alonso94/SCL/master/videos/vid1.gif" width=25%>
+  <img src="https://raw.githubusercontent.com/Alonso94/SCL/master/videos/vid3.gif" width=25%>
+  <img src="https://raw.githubusercontent.com/Alonso94/SCL/master/videos/vid4.gif" width=25%>
 </p>
-### a goal image
+
+### Evaluation video with the reward
 <p align="center">
-  <img src="https://raw.githubusercontent.com/Alonso94/SCL/master/target.png" width=25%>
+  <img src="https://raw.githubusercontent.com/Alonso94/SCL/master/eval_videos/eval.gif" width=25%>
+  <img src="https://raw.githubusercontent.com/Alonso94/SCL/master/images/eval24.png" width=32%>
 </p>
